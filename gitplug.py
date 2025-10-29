@@ -1,7 +1,6 @@
 import subprocess
 from ranger.api.commands import Command
 
-
 class git(Command):
 
     commands = 'init status clone add rm restore commit remote push'.split()
@@ -10,6 +9,8 @@ class git(Command):
     def execute(self):
         # empty
         if not self.arg(1):
+            # Write to a tmp file and open it in editor (Easy solution)
+            # Shift to a terminal instance and display commands
             return self.fm.notify("For commands check \"git help\"")
 
         # help
@@ -18,19 +19,27 @@ class git(Command):
 
         # init
         if self.arg(1) == self.commands[0]:
-            subprocess.run(["git", "init", "--quiet"])
-            return self.fm.notify("Repository initialized successefully")
+            output = subprocess.run(["git", "init"], capture_output=True, text=True)
+            if output.returncode != 0:
+                self.fm.notify("git: " + output.stderr, bad=True)
+            else:
+                return self.fm.notify("git: " + output.stdout)
 
         # status
+        # Note: This feature is limited by the Ranger API. In an ideal world, we should be able to use whichever editor and it should be a read only file, I would love to use less for this instance
         if self.arg(1) == self.commands[1]:
-            output = subprocess.check_output(["git", "status"]).decode()
+            output = subprocess.run(["git", "status"], capture_output=True, text=True)
+
+            if output.returncode !=0:
+                return self.fm.notify("git: " + output.stderr, bad=True)
 
             with open('/tmp/gitplug-status', 'w') as out:
-                out.write(output)
+                out.write(output.stdout)
 
             return self.fm.edit_file('/tmp/gitplug-status')
 
         # clone
+        # TODO:
         # TIP!
         #       to clone private repositorues you have to store your data
         #       using: "git config --global credential.helper store" in your
@@ -46,15 +55,19 @@ class git(Command):
                 return self.fm.notify("Repository successfully cloned!")
 
         # add
+        # TODO: Improvement idea, check if the file at path exists, if not exit with error early
         if self.arg(1) == self.commands[3]:
             if not self.arg(2):
                 return self.fm.notify("Missing arguments! Usage :git add <file>", bad=True)
 
-            if self.arg(2):
-                subprocess.run(["git", "add", self.arg(2)])
-                return self.fm.notify("Successfully added files to branch!")
+            # Could throw an error if file is not present
+            output = subprocess.run(["git", "add", self.arg(2)], capture_output=True, text=True)
+            if output.returncode != 0:
+                return self.fm.notify("git: " + output.stderr, bad=True)
+            return self.fm.notify("git: Successfully added")
 
         #rm
+        # TODO: TODO from add applies here
         if self.arg(1) == self.commands[4]:
             if not self.arg(2):
                 return self.fm.notify("Missing arguments! Usage :git rm <file>", bad=True)
