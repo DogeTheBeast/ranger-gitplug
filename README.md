@@ -1,9 +1,11 @@
 gitplug
 =======
-### Development will not be continued. Feel free to fork and upgrade.
-
 
 git plugin for ranger file manager.
+
+*This project is a fork of [ranger-gitplug](https://github.com/ywwa/ranger-gitplug) with a bit more command support*
+
+Feel free to create issues for any bugs.
 
 #### Install:
 ```
@@ -13,18 +15,27 @@ make install
 ```
 
 #### Working command list:
+* ```:git help```
 * ```:git init```
 * ```:git status```
 * ```:git clone <url>```
 * ```:git add <file>```
 * ```:git rm <file>```
 * ```:git restore <file>``` 
+* ```:git commit <text>``` 
 * ```:git remote add/rm <name> <url>```
 * ```:git push```
-* ```:git commit <text>``` 
+* ```:git reset [--soft | --hard]```
+* ```:git checkout [-b] <branch name>```
+* ```:git pull```
+* ```:git fetch```
 
 #### TODO:
 - [x] ```:git push```
 - [x] ```:git remote```
+- [ ] ```:git pull```
+- [ ] ```:git checkout```
+- [ ] ```:git reset```
+- [ ] ```:git fetch```
+- [ ] ```:git diff ```
 - [ ] tabbing
-- [ ] _something more i think_

@@ -1,130 +1,170 @@
 import subprocess
+import os
 from ranger.api.commands import Command
 
 class git(Command):
 
-    commands = 'init status clone add rm restore commit remote push'.split()
-
+    commands = 'init status clone add rm restore commit remote push reset checkout pull fetch'
 
     def execute(self):
-        # empty
-        if not self.arg(1):
-            # Write to a tmp file and open it in editor (Easy solution)
-            # Shift to a terminal instance and display commands
-            return self.fm.notify("For commands check \"git help\"")
 
-        # help
-        if self.arg(1) == "help":
-            return self.fm.notify("Not done yet!", bad=True)
+        match self.arg(1):
+            case "help":
+                return self.fm.notify("Supported git commands: " + self.commands, bad=True)
 
-        # init
-        if self.arg(1) == self.commands[0]:
-            output = subprocess.run(["git", "init"], capture_output=True, text=True)
-            if output.returncode != 0:
-                self.fm.notify("git: " + output.stderr, bad=True)
-            else:
-                return self.fm.notify("git: " + output.stdout)
+            case "status":
+                output = subprocess.run(["git", "status"], capture_output=True, text=True)
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
 
-        # status
-        # Note: This feature is limited by the Ranger API. In an ideal world, we should be able to use whichever editor and it should be a read only file, I would love to use less for this instance
-        if self.arg(1) == self.commands[1]:
-            output = subprocess.run(["git", "status"], capture_output=True, text=True)
+                with open('/tmp/gitplug-status', 'w') as out:
+                    out.write(output.stdout)
 
-            if output.returncode !=0:
-                return self.fm.notify("git: " + output.stderr, bad=True)
+                return self.fm.edit_file('/tmp/gitplug-status')
 
-            with open('/tmp/gitplug-status', 'w') as out:
-                out.write(output.stdout)
+            case "init":
+                output = subprocess.run(["git", "init"], capture_output=True, text=True)
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
+                else:
+                    return self.fm.notify("git: " + output.stdout)
 
-            return self.fm.edit_file('/tmp/gitplug-status')
+            case "clone":
+                if not self.arg(2):
+                    return self.fm.notify("Missing url!", bad=True)
 
-        # clone
-        # TODO:
-        # TIP!
-        #       to clone private repositorues you have to store your data
-        #       using: "git config --global credential.helper store" in your
-        #       terminals emulator(not ranger! it will not work!) and then
-        #       do one pull still from terminals emulator and then you can
-        #       clone private repositories from ranger.
-        if self.arg(1) == self.commands[2]:
-            if not self.arg(2):
-                return self.fm.notify("Missing url!", bad=True)
+                if self.arg(2):
+                    subprocess.run(["git", "clone", self.arg(2), "--quiet"])
+                    return self.fm.notify("Repository successfully cloned!")
 
-            if self.arg(2):
-                subprocess.run(["git", "clone", self.arg(2), "--quiet"])
-                return self.fm.notify("Repository successfully cloned!")
+            case "add":
+                if not self.arg(2):
+                    return self.fm.notify("Missing arguments! Usage :git add <file>", bad=True)
 
-        # add
-        # TODO: Improvement idea, check if the file at path exists, if not exit with error early
-        if self.arg(1) == self.commands[3]:
-            if not self.arg(2):
-                return self.fm.notify("Missing arguments! Usage :git add <file>", bad=True)
+                if not os.path.exists(self.arg(2)):
+                    return self.fm.notify("File or folder does not exist", bad=True)
 
-            # Could throw an error if file is not present
-            output = subprocess.run(["git", "add", self.arg(2)], capture_output=True, text=True)
-            if output.returncode != 0:
-                return self.fm.notify("git: " + output.stderr, bad=True)
-            return self.fm.notify("git: Successfully added")
+                output = subprocess.run(["git", "add", self.arg(2)], capture_output=True, text=True)
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
+                return self.fm.notify("git: Successfully added files to branch!")
 
-        #rm
-        # TODO: TODO from add applies here
-        if self.arg(1) == self.commands[4]:
-            if not self.arg(2):
-                return self.fm.notify("Missing arguments! Usage :git rm <file>", bad=True)
+            case "rm":
+                if not self.arg(2):
+                    return self.fm.notify("Missing arguments! Usage :git rm <file>", bad=True)
 
-            if self.arg(2):
-                subprocess.run(["git", "rm", self.arg(2)])
-                return self.fm.notify("Successfully removed files from branch!")
+                if not os.path.exists(self.arg(2)):
+                    return self.fm.notify("File or folder does not exist", bad=True)
 
-        # restore
-        if self.arg(1) == self.commands[5]:
-            if not self.arg(2):
-                return self.fm.notify("Missing arguments! Usage :git restore <file>", bad=True)
+                subprocess.run(["git", "rm", self.arg(2)], capture_output=True, text=True)
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
+                return self.fm.notify("git: Successfully removed files from branch!")
 
-            if self.arg(2):
+            case "restore":
+                if not self.arg(2):
+                    return self.fm.notify("Missing arguments! Usage :git restore <file>", bad=True)
+
+                if not os.path.exists(self.arg(2)):
+                    return self.fm.notify("File or folder does not exist", bad=True)
+
                 subprocess.run(["git", "restore", "--staged", self.arg(2), "--quiet"])
                 return self.fm.notify("Successfully restored files!")
 
-        # commit
-        if self.arg(1) == self.commands[6]:
-            if not self.rest(2):
-                return self.fm.notify("Missing commit text", bad=True)
+            case "commit":
+                if not self.rest(2):
+                    return self.fm.notify("Missing commit text", bad=True)
 
-            if self.rest(2):
-                subprocess.run(["git", "commit", "-m", self.rest(2), "--quiet"])
-                return self.fm.notify("Successfully commited!")
-        
-        # remote
-        if self.arg(1) == self.commands[7]:
-            if not self.arg(2):
-                return self.fm.notify("Missing arguments! Use: git remote add/rm <name> <url>", bad=True)
+                output = subprocess.run(["git", "commit", "-m", self.rest(2)],capture_output=True, text=True)
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
+                return self.fm.notify("git: Successfully commited! " + output.stdout.splitlines()[1])
 
-            if self.arg(2) == "add":
-                if not self.arg(3):
-                    return self.fm.notify("Missing name and url!", bad=True)
+            case "remote":
+                match self.arg(2):
+                    case "add":
+                        if not self.arg(3):
+                            return self.fm.notify("Missing name and url!", bad=True)
 
-                if self.arg(3):
-                    if not self.arg(4):
-                        return self.fm.notify("Missing url!", bad=True)
+                        if not self.arg(4):
+                            return self.fm.notify("Missing url!", bad=True)
 
-                    if self.arg(4):
                         subprocess.run(["git", "remote", "add", self.arg(3), self.arg(4)])
                         return self.fm.notify("Remote successfully added!")
 
-            if self.arg(2) == "rm":
-                if not self.arg(3):
-                    return self.fm.notify("Missing name!", bad=True)
+                    case "rm":
+                        if not self.arg(3):
+                            return self.fm.notify("Missing name!", bad=True)
 
-                if self.arg(3):
-                    subprocess.run(["git", "remote", "rm", self.arg(3)])
-                    return self.fm.notify("Remote successfully removed")
+                        if self.arg(3):
+                            subprocess.run(["git", "remote", "rm", self.arg(3)])
+                            return self.fm.notify("Remote successfully removed")
+                    case _:
+                        return self.fm.notify("Missing arguments! Use: git remote add/rm <name> <url>", bad=True)
 
-        # push
-        if self.arg(1) == self.commands[8]:
-            if self.arg(2) == "-u" and self.arg(3) and self.arg(4):
-                subprocess.run(["git", "push", "--quiet", "-u", self.arg(3), self.arg(4)])
-                return self.fm.notify("Repository successfully pushed")
+            case "push":
+                if self.arg(2) == "-u" and self.arg(3) and self.arg(4):
+                    subprocess.run(["git", "push", "--quiet", "-u", self.arg(3), self.arg(4)])
+                    return self.fm.notify("Repository successfully pushed")
 
-            if not self.arg(2):
-                subprocess.run(["git", "push", "--quiet"])
-                return self.fm.notify("Repository successfully pushed")
+                if not self.arg(2):
+                    subprocess.run(["git", "push", "--quiet"])
+                    return self.fm.notify("Repository successfully pushed")
+
+            case "reset":
+                if self.arg(2) == "--hard":
+                    output = subprocess.run(["git", "reset", "--hard"], capture_output=True, text=True)
+                    if output.returncode != 0:
+                        return self.fm.notify("git: " + output.stderr, bad=True)
+                    return self.fm.notify("Repository hard reset!")
+
+                if self.arg(2) == "--soft":
+                    output = subprocess.run(["git", "reset", "--soft"], capture_output=True, text=True)
+                    if output.returncode != 0:
+                        return self.fm.notify("git: " + output.stderr, bad=True)
+                    return self.fm.notify("Repository soft reset!")
+
+                return self.fm.notify("Usage: git reset [--hard | --soft]")
+
+            case "checkout":
+                match self.arg(2):
+                    case None:
+                        return self.fm.notify("Usage: git checkout <branch-name> or git checkout -b <new-branch>", bad=True)
+                    case "-b" if self.arg(3):
+                        output = subprocess.run(["git", "checkout", "-b", self.arg(3)], capture_output=True, text=True)
+                        if output.returncode != 0:
+                            return self.fm.notify("git: " + output.stderr, bad=True)
+                        return self.fm.notify(f"Created and switched to new branch '{self.arg(3)}'")
+                    case _:
+                        output = subprocess.run(["git", "checkout", self.arg(2)], capture_output=True, text=True)
+                        if output.returncode != 0:
+                            return self.fm.notify("git: " + output.stderr, bad=True)
+                        return self.fm.notify(f"Switched to branch '{self.arg(2)}'")
+
+            case "pull":
+                output = subprocess.run(["git", "pull"], capture_output=True, text=True)
+
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
+
+                if "Already up to date" in output.stdout:
+                    return self.fm.notify("git: Already up to date.", bad=True)
+
+                if "CONFLICT" in output.stdout:
+                    with open('/tmp/gitplug-conflict', 'w') as out:
+                        out.write(output.stdout)
+
+                    return self.fm.edit_file('/tmp/gitplug-conflict')
+
+                return self.fm.notify("git: Successfully pulled updates from remote repository.")
+
+            case "fetch":
+                output = subprocess.run(["git", "fetch"], capture_output=True, text=True)
+
+                if output.returncode != 0:
+                    return self.fm.notify("git: " + output.stderr, bad=True)
+
+                return self.fm.notify("git: Successfully fetched updates from remote repository.")
+
+            case _:
+                return self.fm.notify("Command not supported, use :git help for all supported commands", bad=True)
