@@ -29,6 +29,7 @@ make install
 * ```:git checkout [-b] <branch name>```
 * ```:git pull```
 * ```:git fetch```
+* ```:git diff [branch_name]```
 
 #### TODO:
 - [x] ```:git push```
@@ -37,5 +38,4 @@ make install
 - [ ] ```:git checkout```
 - [ ] ```:git reset```
 - [ ] ```:git fetch```
-- [ ] ```:git diff ```
-- [ ] tabbing
+- [x] ```:git diff ```
