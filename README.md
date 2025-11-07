@@ -8,11 +8,20 @@ git plugin for ranger file manager.
 Feel free to create issues for any bugs.
 
 #### Install:
+
+##### Using the MakeFile
+
+For most users, the Makefile script should be enough. Follow the following instructions,
+
 ```
 git clone https://github.com/yonghie/ranger-gitplug
 cd ranger-gitplug
 make install
 ```
+
+##### Manually
+
+Copy the ```gitplug.py``` file into the ranger's ```plugins``` folder. 
 
 #### Working command list:
 * ```:git help```
@@ -32,10 +41,4 @@ make install
 * ```:git diff [branch_name]```
 
 #### TODO:
-- [x] ```:git push```
-- [x] ```:git remote```
-- [ ] ```:git pull```
-- [ ] ```:git checkout```
-- [ ] ```:git reset```
-- [ ] ```:git fetch```
-- [x] ```:git diff ```
+* [ ] Better visibility for git pull
